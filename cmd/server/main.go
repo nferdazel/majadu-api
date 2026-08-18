@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"io"
 	"log/slog"
 	"net/http"
 	"os"
@@ -13,7 +12,7 @@ import (
 	"majadu-api/internal/config"
 	"majadu-api/internal/db"
 	"majadu-api/internal/handler"
-	"majadu-api/internal/logfile"
+	"majadu-api/internal/logger"
 	"majadu-api/internal/middleware"
 	"majadu-api/internal/store"
 
@@ -28,25 +27,20 @@ func main() {
 		os.Exit(1)
 	}
 
-	// Logger: stdout default; kalau MAJADU_LOG_DIR di-set → file harian
-	// (app-YYYY-MM-DD.log, retensi 7 hari — ala catalina.out).
-	var logCloser func() error
-	var logOut io.Writer = os.Stdout
-	if cfg.LogDir != "" {
-		w, err := logfile.New(cfg.LogDir, 7)
-		if err != nil {
-			slog.Error("log file init failed", "error", err)
-			os.Exit(1)
-		}
-		logOut = w
-		logCloser = w.Close
+	// Logger: stdout default; kalau LOG_FILE di-set → rolling log file.
+	logger, cleanup := logger.NewLogger(logger.Options{
+		Level:      cfg.LogLevel,
+		Format:     cfg.LogFormat,
+		Filename:   cfg.LogFile,
+		MaxSize:    cfg.LogMaxSize,
+		MaxAge:     cfg.LogMaxAge,
+		MaxBackups: cfg.LogMaxBackups,
+		Compress:   cfg.LogCompress,
+	})
+	if cleanup != nil {
+		defer func() { _ = cleanup() }()
 	}
-	logger := slog.New(slog.NewTextHandler(logOut, &slog.HandlerOptions{
-		Level: parseLogLevel(cfg.LogLevel),
-	}))
-	if logCloser != nil {
-		defer func() { _ = logCloser() }()
-	}
+	slog.SetDefault(logger)
 
 	// Context dibatalkan saat SIGINT/SIGTERM; dipakai juga untuk
 	// memberhentikan janitor rate limiter saat shutdown.
@@ -127,19 +121,4 @@ func registerRoutes(mux *http.ServeMux, logger *slog.Logger, cfg config.Config, 
 	h = middleware.RequestID(h)
 	h = middleware.Recover(logger)(h)
 	return h
-}
-
-// parseLogLevel — map MAJADU_LOG_LEVEL ("debug"/"info"/"warn") ke slog.Level.
-// Nilai tidak dikenal → default Info.
-func parseLogLevel(s string) slog.Level {
-	switch s {
-	case "debug":
-		return slog.LevelDebug
-	case "warn":
-		return slog.LevelWarn
-	case "error":
-		return slog.LevelError
-	default:
-		return slog.LevelInfo
-	}
 }

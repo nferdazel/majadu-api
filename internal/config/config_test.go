@@ -19,8 +19,13 @@ func clearEnv(t *testing.T) {
 		"CORS_ALLOWED_ORIGINS",
 		"PUBLIC_BASE_URL",
 		"MAJADU_RATE_LIMIT_PER_MIN",
-		"MAJADU_LOG_DIR",
-		"MAJADU_LOG_LEVEL",
+		"LOG_LEVEL",
+		"LOG_FORMAT",
+		"LOG_FILE",
+		"LOG_MAX_SIZE",
+		"LOG_MAX_AGE",
+		"LOG_MAX_BACKUPS",
+		"LOG_COMPRESS",
 	}
 	for _, k := range keys {
 		if old, ok := os.LookupEnv(k); ok {
@@ -61,6 +66,24 @@ func TestLoad_Success_Dev(t *testing.T) {
 	if cfg.LogLevel != "info" {
 		t.Errorf("expected LogLevel 'info', got %q", cfg.LogLevel)
 	}
+	if cfg.LogFormat != "text" {
+		t.Errorf("expected LogFormat 'text', got %q", cfg.LogFormat)
+	}
+	if cfg.LogFile != "" {
+		t.Errorf("expected LogFile '', got %q", cfg.LogFile)
+	}
+	if cfg.LogMaxSize != 100 {
+		t.Errorf("expected LogMaxSize 100, got %d", cfg.LogMaxSize)
+	}
+	if cfg.LogMaxAge != 7 {
+		t.Errorf("expected LogMaxAge 7, got %d", cfg.LogMaxAge)
+	}
+	if cfg.LogMaxBackups != 7 {
+		t.Errorf("expected LogMaxBackups 7, got %d", cfg.LogMaxBackups)
+	}
+	if !cfg.LogCompress {
+		t.Errorf("expected LogCompress true, got false")
+	}
 }
 
 func TestLoad_Success_Prod(t *testing.T) {
@@ -72,8 +95,13 @@ func TestLoad_Success_Prod(t *testing.T) {
 	t.Setenv("CORS_ALLOWED_ORIGINS", "https://majadu.vercel.app,https://admin.vercel.app")
 	t.Setenv("PUBLIC_BASE_URL", "https://api.qouver.com/majadu")
 	t.Setenv("MAJADU_RATE_LIMIT_PER_MIN", "60")
-	t.Setenv("MAJADU_LOG_DIR", "/logs")
-	t.Setenv("MAJADU_LOG_LEVEL", "warn")
+	t.Setenv("LOG_LEVEL", "warn")
+	t.Setenv("LOG_FORMAT", "json")
+	t.Setenv("LOG_FILE", "/logs/app.log")
+	t.Setenv("LOG_MAX_SIZE", "50")
+	t.Setenv("LOG_MAX_AGE", "14")
+	t.Setenv("LOG_MAX_BACKUPS", "10")
+	t.Setenv("LOG_COMPRESS", "false")
 
 	cfg, err := config.Load()
 	if err != nil {
@@ -102,11 +130,26 @@ func TestLoad_Success_Prod(t *testing.T) {
 	if cfg.RateLimitPerMin != 60 {
 		t.Errorf("expected RateLimitPerMin 60, got %d", cfg.RateLimitPerMin)
 	}
-	if cfg.LogDir != "/logs" {
-		t.Errorf("expected LogDir '/logs', got %q", cfg.LogDir)
-	}
 	if cfg.LogLevel != "warn" {
 		t.Errorf("expected LogLevel 'warn', got %q", cfg.LogLevel)
+	}
+	if cfg.LogFormat != "json" {
+		t.Errorf("expected LogFormat 'json', got %q", cfg.LogFormat)
+	}
+	if cfg.LogFile != "/logs/app.log" {
+		t.Errorf("expected LogFile '/logs/app.log', got %q", cfg.LogFile)
+	}
+	if cfg.LogMaxSize != 50 {
+		t.Errorf("expected LogMaxSize 50, got %d", cfg.LogMaxSize)
+	}
+	if cfg.LogMaxAge != 14 {
+		t.Errorf("expected LogMaxAge 14, got %d", cfg.LogMaxAge)
+	}
+	if cfg.LogMaxBackups != 10 {
+		t.Errorf("expected LogMaxBackups 10, got %d", cfg.LogMaxBackups)
+	}
+	if cfg.LogCompress {
+		t.Errorf("expected LogCompress false, got true")
 	}
 }
 

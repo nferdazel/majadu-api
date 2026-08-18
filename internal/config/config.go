@@ -38,12 +38,26 @@ type Config struct {
 	// RateLimitPerMin — batas request per menit per IP. 0 = disabled.
 	RateLimitPerMin int `env:"MAJADU_RATE_LIMIT_PER_MIN" envDefault:"120"`
 
-	// LogDir — direktori log harian (app-YYYY-MM-DD.log, retensi 7 hari).
-	// Kosong = log ke stdout saja (default dev).
-	LogDir string `env:"MAJADU_LOG_DIR"`
+	// LogLevel — "debug" | "info" | "warn" | "error". Default info.
+	LogLevel string `env:"LOG_LEVEL" envDefault:"info"`
 
-	// LogLevel — "debug" | "info" | "warn". Default info.
-	LogLevel string `env:"MAJADU_LOG_LEVEL" envDefault:"info"`
+	// LogFormat — format log: "text" | "json". Default text.
+	LogFormat string `env:"LOG_FORMAT" envDefault:"text"`
+
+	// LogFile — file path target log (mis. /logs/app.log). Kosong = stdout saja.
+	LogFile string `env:"LOG_FILE"`
+
+	// LogMaxSize — ukuran maksimal per file log dalam MB sebelum dirotasi. Default 100.
+	LogMaxSize int `env:"LOG_MAX_SIZE" envDefault:"100"`
+
+	// LogMaxAge — masa retensi log file lama dalam hari. Default 7.
+	LogMaxAge int `env:"LOG_MAX_AGE" envDefault:"7"`
+
+	// LogMaxBackups — jumlah maksimal file cadangan log yang disimpan. Default 7.
+	LogMaxBackups int `env:"LOG_MAX_BACKUPS" envDefault:"7"`
+
+	// LogCompress — kompresi file cadangan log dengan gzip. Default true.
+	LogCompress bool `env:"LOG_COMPRESS" envDefault:"true"`
 }
 
 // Load membaca env, me-load .env jika ada, lalu validasi.
